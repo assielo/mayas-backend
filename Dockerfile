@@ -37,7 +37,8 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/ww
 EXPOSE 10000
 
 # Lancer d'abord les migrations pour créer les tables, puis le cache et enfin le serveur
-CMD php artisan migrate --force && \
+# Réinitialiser et relancer les migrations à chaque démarrage propre, puis lancer le serveur
+CMD php artisan migrate:fresh --force && \
     php artisan config:clear && \
     php artisan cache:clear && \
     php artisan serve --host=0.0.0.0 --port=10000
