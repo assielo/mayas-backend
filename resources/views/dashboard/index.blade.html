@@ -1,0 +1,66 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="space-y-6">
+    <!-- Indicateurs Temps Réel (Consommation API DashboardController) -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm">
+            <p class="text-xs font-medium text-slate-400 uppercase">Visiteurs sur Site</p>
+            <h3 id="stat-visitors" class="text-3xl font-bold text-white mt-1">--</h3>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm">
+            <p class="text-xs font-medium text-slate-400 uppercase">Véhicules au Parking</p>
+            <h3 id="stat-vehicles" class="text-3xl font-bold text-white mt-1">--</h3>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm">
+            <p class="text-xs font-medium text-slate-400 uppercase">Durée Moyenne</p>
+            <h3 id="stat-duration" class="text-3xl font-bold text-white mt-1">-- min</h3>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm">
+            <p class="text-xs font-medium text-slate-400 uppercase">Flotte MDM Active</p>
+            <h3 id="stat-mdm" class="text-3xl font-bold text-white mt-1">-- / --</h3>
+        </div>
+    </div>
+
+    <!-- Log Synoptique en direct -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-sm">
+        <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+            <h2 class="font-semibold text-white">Journal Synoptique des Passages</h2>
+            <span class="text-xs text-indigo-400 animate-pulse"><i class="fa-solid fa-sync mr-1"></i> Flux Live</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+                <thead class="bg-slate-900/50 text-xs uppercase text-slate-400 border-b border-slate-700">
+                    <tr>
+                        <th class="px-6 py-3">Visiteur</th>
+                        <th class="px-6 py-3">CNI</th>
+                        <th class="px-6 py-3">Véhicule</th>
+                        <th class="px-6 py-3">Entrée</th>
+                        <th class="px-6 py-3">Statut</th>
+                    </tr>
+                </thead>
+                <tbody id="live-table-body" class="divide-y divide-slate-700">
+                    <tr><td colspan="5" class="px-6 py-4 text-center text-slate-500">Chargement des flux...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+    async function fetchDashboardData() {
+        try {
+            const res = await fetch('/api/v1/dashboard/stats');
+            const data = await res.json();
+            document.getElementById('stat-visitors').innerText = data.on_site_count ?? 0;
+            document.getElementById('stat-vehicles').innerText = data.vehicles_count ?? 0;
+            document.getElementById('stat-duration').innerText = (data.avg_visit_duration ?? 0) + ' min';
+            document.getElementById('stat-mdm').innerText = `${data.active_devices ?? 0} / ${data.total_devices ?? 0}`;
+        } catch (e) { console.error(e); }
+    }
+    fetchDashboardData();
+    setInterval(fetchDashboardData, 10000); // Auto-refresh toutes les 10s
+</script>
+@endpush
