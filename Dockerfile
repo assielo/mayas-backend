@@ -30,7 +30,7 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-# Exposer le port de l'application
+# Exposer le port de l'application (Render utilise par défaut le port 10000)
 EXPOSE 10000
 
 # Lancer les optimisations Laravel puis le serveur au démarrage
