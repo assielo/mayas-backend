@@ -36,7 +36,8 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/ww
 # Exposer le port de l'application
 EXPOSE 10000
 
-# Lancer les optimisations Laravel puis le serveur au démarrage
+# Lancer les optimisations, les migrations puis le serveur au démarrage
 CMD php artisan config:clear && \
     php artisan cache:clear && \
+    php artisan migrate --force && \
     php artisan serve --host=0.0.0.0 --port=10000
