@@ -23,14 +23,17 @@ WORKDIR /var/www
 # Copier le code source
 COPY . /var/www
 
+# Créer le dossier database et le fichier sqlite vide si besoin
+RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
+
 # Installer les dépendances Laravel sans les packages de dev
 RUN composer install --no-dev --optimize-autoloader
 
-# Donner les bonnes permissions aux dossiers de stockage et de cache
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+# Donner les bonnes permissions aux dossiers de stockage, cache et database
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/database \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache /var/www/database
 
-# Exposer le port de l'application (Render utilise par défaut le port 10000)
+# Exposer le port de l'application
 EXPOSE 10000
 
 # Lancer les optimisations Laravel puis le serveur au démarrage
