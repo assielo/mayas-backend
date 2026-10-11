@@ -20,20 +20,20 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Définir le répertoire de travail
 WORKDIR /var/www
 
-# Copier les fichiers de dépendances en premier pour optimiser le cache Docker
+# Créer le dossier database et le fichier sqlite vide tout de suite
+RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
+
+# Copier les fichiers de dépendances
 COPY composer.json composer.lock /var/www/
 
-# Installer les dépendances Laravel sans scripts automatiques pour éviter le chargement prématuré de Laravel
+# Installer les dépendances Laravel sans les scripts automatiques
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 # Copier le reste du code source
 COPY . /var/www
 
-# Relancer composer dump-autoload pour finaliser l'autoloader proprement
+# Finaliser l'autoloader
 RUN composer dump-autoload --optimize
-
-# Créer le dossier database et le fichier sqlite vide si besoin
-RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
 
 # Donner les bonnes permissions aux dossiers de stockage, cache et database
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/database \
