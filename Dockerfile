@@ -30,13 +30,16 @@ RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
 ENV DB_CONNECTION=sqlite
 ENV DB_DATABASE=/var/www/database/database.sqlite
 
-# 3. Installer les dépendances Composer EN PREMIER pour créer le dossier vendor/
-RUN composer install --no-dev --optimize-autoloader
+# 3. Installer les dépendances Composer avec --no-scripts pour éviter l'erreur sur artisan
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# 4. Copier le reste du code source
+# 4. Copier le reste du code source (y compris artisan)
 COPY . /var/www
 
-# 5. Maintenant que vendor/ existe, on peut lancer les migrations en toute sécurité
+# 5. Lancer composer dump-autoload pour enregistrer proprement les packages maintenant que tout est là
+RUN composer dump-autoload --optimize
+
+# 6. Exécuter les migrations pour créer les tables
 RUN php artisan migrate --force
 
 # Donner les bonnes permissions aux dossiers de stockage, cache et database
