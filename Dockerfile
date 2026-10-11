@@ -20,24 +20,24 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Définir le répertoire de travail
 WORKDIR /var/www
 
-# 1. Créer le dossier database et le fichier sqlite vide tout de suite
-RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
+# 1. Copier d'abord les fichiers de dépendances
+COPY composer.json composer.lock /var/www/
 
-# Copier le code source pour pouvoir exécuter les migrations pendant le build
-COPY . /var/www
+# 2. Créer le dossier database et le fichier sqlite vide
+RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
 
 # Configurer les variables d'environnement pour SQLite pendant le build
 ENV DB_CONNECTION=sqlite
 ENV DB_DATABASE=/var/www/database/database.sqlite
 
-# 2. Exécuter les migrations pendant le build pour créer les tables (évite l'erreur "no such table")
-RUN php artisan migrate --force
-
-# 3. Installer les dépendances Laravel proprement
+# 3. Installer les dépendances Composer EN PREMIER pour créer le dossier vendor/
 RUN composer install --no-dev --optimize-autoloader
 
-# Finaliser l'autoloader
-RUN composer dump-autoload --optimize
+# 4. Copier le reste du code source
+COPY . /var/www
+
+# 5. Maintenant que vendor/ existe, on peut lancer les migrations en toute sécurité
+RUN php artisan migrate --force
 
 # Donner les bonnes permissions aux dossiers de stockage, cache et database
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/database \
