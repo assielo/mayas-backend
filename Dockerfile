@@ -20,14 +20,20 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Définir le répertoire de travail
 WORKDIR /var/www
 
-# Copier le code source
+# Copier les fichiers de dépendances en premier pour optimiser le cache Docker
+COPY composer.json composer.lock /var/www/
+
+# Installer les dépendances Laravel sans scripts automatiques pour éviter le chargement prématuré de Laravel
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# Copier le reste du code source
 COPY . /var/www
+
+# Relancer composer dump-autoload pour finaliser l'autoloader proprement
+RUN composer dump-autoload --optimize
 
 # Créer le dossier database et le fichier sqlite vide si besoin
 RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
-
-# Installer les dépendances Laravel sans les packages de dev
-RUN composer install --no-dev --optimize-autoloader
 
 # Donner les bonnes permissions aux dossiers de stockage, cache et database
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/database \
@@ -36,9 +42,9 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/ww
 # Exposer le port de l'application
 EXPOSE 10000
 
-# Lancer d'abord les migrations pour créer les tables, puis le cache et enfin le serveur
-# Réinitialiser et relancer les migrations à chaque démarrage propre, puis lancer le serveur
-CMD php artisan migrate:fresh --force && \
+# Commande de démarrage : Migrations + Seeder Admin + Lancement du serveur PHP
+CMD php artisan migrate --force && \
+    php artisan db:seed --class=AdminUserSeeder --force && \
     php artisan config:clear && \
     php artisan cache:clear && \
     php artisan serve --host=0.0.0.0 --port=10000
