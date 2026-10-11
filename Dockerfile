@@ -20,17 +20,21 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Définir le répertoire de travail
 WORKDIR /var/www
 
-# Créer le dossier database et le fichier sqlite vide tout de suite
+# 1. Créer le dossier database et le fichier sqlite vide tout de suite
 RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
 
-# Copier les fichiers de dépendances
-COPY composer.json composer.lock /var/www/
-
-# Installer les dépendances Laravel sans les scripts automatiques
-RUN composer install --no-dev --optimize-autoloader --no-scripts
-
-# Copier le reste du code source
+# Copier le code source pour pouvoir exécuter les migrations pendant le build
 COPY . /var/www
+
+# Configurer les variables d'environnement pour SQLite pendant le build
+ENV DB_CONNECTION=sqlite
+ENV DB_DATABASE=/var/www/database/database.sqlite
+
+# 2. Exécuter les migrations pendant le build pour créer les tables (évite l'erreur "no such table")
+RUN php artisan migrate --force
+
+# 3. Installer les dépendances Laravel proprement
+RUN composer install --no-dev --optimize-autoloader
 
 # Finaliser l'autoloader
 RUN composer dump-autoload --optimize
@@ -42,9 +46,8 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/ww
 # Exposer le port de l'application
 EXPOSE 10000
 
-# Commande de démarrage : Migrations + Seeder Admin + Lancement du serveur PHP
-CMD php artisan migrate --force && \
-    php artisan db:seed --class=AdminUserSeeder --force && \
+# Commande de démarrage : Seeder Admin + Nettoyage cache + Lancement du serveur PHP
+CMD php artisan db:seed --class=AdminUserSeeder --force && \
     php artisan config:clear && \
     php artisan cache:clear && \
     php artisan serve --host=0.0.0.0 --port=10000
